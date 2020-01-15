@@ -1,6 +1,7 @@
 /*
-  Rainsensor collector 18 sensors to 1 output whne 2 sensors are detecting rain
-  Turns an LED on for one second, then off for one second, repeatedly as alive signal to controller.
+  Rainsensor collector 
+  18 sensors to 1 output when 2 sensors are detecting rain
+  LED and output 45 blink 1 Hz as alive signal to controller.
   By Chris 15/01/2020  
 */
 
@@ -8,8 +9,9 @@
 void setup() {
   // initialize digital pin LED_BUILTIN as an output.
   pinMode(LED_BUILTIN, OUTPUT);
-  // initialize digital pin 44 as an output.
+  // initialize digital pin 44 -45 as an output.
   pinMode(44, OUTPUT);
+  pinMode(45, OUTPUT);
   // initialize pin 22 - 43 as input
   pinMode(22, INPUT);
   pinMode(24, INPUT);
@@ -28,9 +30,7 @@ void setup() {
   pinMode(40, INPUT);
   pinMode(41, INPUT);
   pinMode(42, INPUT);
-  pinMode(43, INPUT);
- 
-  
+  pinMode(43, INPUT);  
 }
 
 // the loop function runs over and over again forever
@@ -139,7 +139,9 @@ void loop() {
 
   // blink led output for alive signal 1 Hz
   digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
+  digitalWrite(45, HIGH);
   delay(500);                       // wait for a second
   digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
+  digitalWrite(45, LOW); 
   delay(500);                       // wait for a second
 }

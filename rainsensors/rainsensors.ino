@@ -2,6 +2,7 @@
   Rainsensor collector 
   18 sensors to 1 output when 2 sensors are detecting rain
   LED and output 45 blink 1 Hz as alive signal to controller.
+  LET OP de iputs moeten voorzien van 10K pull-down weerstanden
   By Chris 15/01/2020  
 */
 
@@ -13,24 +14,24 @@ void setup() {
   pinMode(44, OUTPUT);
   pinMode(45, OUTPUT);
   // initialize pin 22 - 43 as input
-  pinMode(22, INPUT_PULLUP);
-  pinMode(24, INPUT_PULLUP);
-  pinMode(26, INPUT_PULLUP);
-  pinMode(28, INPUT_PULLUP);
-  pinMode(30, INPUT_PULLUP);
-  pinMode(31, INPUT_PULLUP);
-  pinMode(32, INPUT_PULLUP);
-  pinMode(33, INPUT_PULLUP);
-  pinMode(34, INPUT_PULLUP);
-  pinMode(35, INPUT_PULLUP);
-  pinMode(36, INPUT_PULLUP);
-  pinMode(37, INPUT_PULLUP);
-  pinMode(38, INPUT_PULLUP);
-  pinMode(39, INPUT_PULLUP);
-  pinMode(40, INPUT_PULLUP);
-  pinMode(41, INPUT_PULLUP);
-  pinMode(42, INPUT_PULLUP);
-  pinMode(43, INPUT_PULLUP);  
+  pinMode(22, INPUT);
+  pinMode(24, INPUT);
+  pinMode(26, INPUT);
+  pinMode(28, INPUT);
+  pinMode(30, INPUT);
+  pinMode(31, INPUT);
+  pinMode(32, INPUT);
+  pinMode(33, INPUT);
+  pinMode(34, INPUT);
+  pinMode(35, INPUT);
+  pinMode(36, INPUT);
+  pinMode(37, INPUT);
+  pinMode(38, INPUT);
+  pinMode(39, INPUT);
+  pinMode(40, INPUT);
+  pinMode(41, INPUT);
+  pinMode(42, INPUT);
+  pinMode(43, INPUT);  
 }
 
 // the loop function runs over and over again forever
@@ -131,7 +132,7 @@ void loop() {
   } 
 
   // when more then 1 input is high its raining
-  if (highCounter < 17) {
+  if (highCounter > 1) {
     digitalWrite(44, HIGH);
   } else {
     digitalWrite(44, LOW);

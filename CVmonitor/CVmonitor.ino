@@ -212,7 +212,7 @@ void loop() {
          } 
           
           // Veiligheids blok reset
-          if ((Status == 0 || Status == 3) && voltage > SpanningPreReset){
+          if ((Status == 0 || Status == 3) && voltage >= SpanningPreReset){
               digitalWrite(D5, LOW);
               digitalWrite(D6, HIGH);
               mqttClient.publish("CVStatus", "Resetting");

@@ -1,0 +1,291 @@
+// informatie:
+// http://www.esp8266learning.com/wemos-d1-esp8266-based-board.php
+// https://components101.com/wireless/esp8266-pinout-configuration-features-datasheet
+// https://www.addicore.com/D1-DevBoard-p/aD286.htm
+// https://uc806aae2d18cf758f8ba76518d1.dl.dropboxusercontent.com/cd/0/inline2/BF9yEz6sIsHM9vme9zQ8RShLkSgNQPLYeopJQR-j-m1w9GqcDF30GrCAGV2rH8OA0xr1RE-wSdaHvOglP9USAGcTgqxsp4lRkwkN8s9sWkeHGz3RmEoKLGuUBKUQ3N3va3eQj201n4yCgdZ-SqM51CTDvPWT5yESVgVBKFxbu9-tPRqzaoSjYayFdc7_9lRtBxhuAdgHA2tBVz4QRNv55CmYxsA4nRURdVoqpAfMFSKO6N7Ag7-fKBd6gSHruJ8FQNem5WdjqiDKRp64EhrrwH7335KPZAXXnTKL2f30e23Va3ScERr3z4Hjee8rdGa2aC9_hwnkAb67D9hNLMo95oPh/file
+// https://uc6299d5e11d4bea5565a586aa47.dl.dropboxusercontent.com/cd/0/inline2/BF_7lOPOSVU5A-_KUrVNlNjILJyjz4BV_4hEALFaAWu9SSpPXlvF8-VR8NP-ObekPFW7fdjHswiMIc8DVlQwe77JcM1KimG6lsB1kccAnVLl8Y3WoGEVQVe48vyo7UJM7ARL6izpm3QQO0-2nhguFTsClnQtZ5G3yG8O_PDxZTnAHGTYrDUNNJp8It0Zd6Uy3U5OcUtqLeL1Ox96fAnjO7skrL_dgQqPBp5F3LO6VkTbax8_IJUf1vo6q-gkVviChSkkW0R7YyIG-4ULOtr-1efo-3sI9gex5EUvj-dkM__jK_IL68Or2FCzX9MtUYz0ox9NORST3r5BHLs8k2j43gdR/file
+// https://averagemaker.com/2018/04/how-to-set-up-wifi-on-a-wemos.html
+// https://www.digikey.com/en/maker/blogs/2018/how-to-use-basic-mqtt-on-arduino
+
+#include <Pinger.h>
+#include <ESP8266WiFi.h>
+#include <SPI.h>
+#include <Ethernet.h>
+#include <PubSubClient.h>
+#include <elapsedMillis.h>
+
+
+// global var
+bool resetting = false;
+WiFiClient WIFI_CLIENT;
+int period = 30;// 150;//150 seconden = 2.5 min
+float rest;
+int LedState;
+int ResetCounter = 0;
+int LoopCounter = 0;
+int LeesRepeat = 0;
+int whileVoorwaarde = 1;
+int avgRead;
+
+// Function prototypes
+void subscribeReceive(char* topic, byte* payload, unsigned int length);
+
+// Ethernet and MQTT related objects
+EthernetClient ethClient;
+PubSubClient mqttClient(ethClient);
+Pinger pinger;
+int pingResult;
+
+// Network SSID
+const char* ssid = "WiFi-2.4-09A8 Accespoint";
+const char* password = "d95uGXkD72jY";
+
+// Make sure to leave out the http and slashes!
+const char* server = "192.168.1.43";
+
+void wait(int seconds)
+{
+  elapsedMillis waiting;     // "waiting" starts at zero
+  waiting = 0; 
+    while (waiting < 1000 * seconds){ 
+      //Serial.println(waiting);
+      yield();
+    }
+    waiting = 0; 
+}
+
+void subscribeReceive(char* topic, byte* payload, unsigned int length)
+{
+  // Print the topic
+  Serial.print("Topic: ");
+  Serial.println(topic);
+ 
+  // Print the message
+  Serial.print("Message: ");
+  for(int i = 0; i < length; i ++)
+  {
+    Serial.print(char(payload[i]));
+  }
+ 
+  // Print a newline
+  Serial.println("");
+}
+ 
+void setup() {
+  Serial.begin(9600);
+  delay(10);
+  
+  // Connect WiFi
+  Serial.println();
+  Serial.println();
+  Serial.print("Connecting to ");
+  WiFi.begin(ssid, password);
+ 
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  WiFi.hostname("Name");
+  Serial.println(ssid);
+  Serial.println("WiFi connected");
+  Serial.println("");
+ 
+  // Print the IP address
+  Serial.print("my IP address: ");
+  Serial.print(WiFi.localIP());
+  Serial.println("");
+  // test WiFi
+  pingResult = pinger.Ping("192.168.1.43");
+
+  if (pingResult >= 0) {
+    Serial.print("PING SUCCESS! RTT = ");
+    Serial.print(pingResult);
+    Serial.println(" ms");
+  } else {
+    Serial.print("PING FAILED! Error code: ");
+    Serial.println(pingResult);
+  }
+ 
+
+ mqttClient.setServer("192.168.1.43", 1883);
+ mqttClient.setClient(WIFI_CLIENT);
+ mqttClient.connect("arduino-1");
+
+ while (!mqttClient.connected()) {
+  Serial.print("Connecting to MQTT...");
+  Serial.print("connection state: ");
+  Serial.println(mqttClient.state());
+  delay(300);
+  mqttClient.connect("arduino-1");
+ }
+  if (mqttClient.connect("arduino-1")) {
+    // connection succeeded
+    Serial.println("Connected ");
+    
+  } 
+  else {
+    // connection failed
+    // mqttClient.state() will provide more information
+    // on why it failed.
+    Serial.println("Connection failed ");
+  }
+
+  // IO config:
+ pinMode(A0, INPUT);
+ pinMode(D5, OUTPUT);    // sets the digital pin D5 as LED
+ pinMode(D6, OUTPUT);    // sets the digital pin D6 as HR RESET
+ Serial.println("Starting loop");
+ 
+}
+
+void loop() {
+  // This is needed at the top of the loop!
+  mqttClient.loop();
+  // Ensure that we are subscribed to the topic "MakerIOTopic"
+  mqttClient.subscribe("CVSpanning");
+  mqttClient.subscribe("RestTijd");
+  mqttClient.subscribe("CVStatus");
+  int voltage;
+  int AnaIn;
+  int LeesTeller = 1;
+  while (1 > 0){
+    // read the input on analog pin 0:  
+    // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V) by " * (240.0 / 1023.0)":
+    AnaIn = 0;
+    LeesTeller = 1;
+    LeesRepeat = 0;
+    whileVoorwaarde = 1;
+    while (whileVoorwaarde > 0)
+    {
+     AnaIn = analogRead(A0);
+     //Serial.println(AnaIn);
+     LeesTeller = LeesTeller + 1;
+     if (AnaIn >= 100){
+      LeesRepeat = LeesRepeat + 1;
+      }
+     else
+      {
+      LeesRepeat = 0;
+     }
+     Serial.print("LeesTeller: ");
+     Serial.println(LeesTeller);
+     wait(1); 
+     if (LeesRepeat >= 1){
+      whileVoorwaarde = 0;
+     }
+    
+    }
+    voltage = (AnaIn * 0.3225) - 81.042;
+    if (voltage < 0){
+      voltage = 0;
+     }
+    char buffer[12];         //the ASCII of the integer will be stored in this char array
+    itoa(voltage,buffer,10); //(integer, yourBuffer, base)
+    Serial.print("Spanning: ");
+    Serial.println(voltage);
+    mqttClient.publish("CVSpanning", buffer );
+    
+     // Veiligheids blok reset
+    if (voltage < 20){
+      ResetCounter=0;
+      resetting = false;
+      }
+    if (voltage >= 20 && (! resetting || ResetCounter > 0)) {
+      resetting = true;
+      ResetCounter = ResetCounter + 1;
+      digitalWrite(D6, LOW);
+      digitalWrite(D5, HIGH);
+      LedState = 1;
+      
+      mqttClient.publish("CVStatus", "Resetting");
+      Serial.print("CVStatus: ");
+      Serial.println("Resetting");
+      Serial.print("ResetCounter: ");
+      Serial.println(ResetCounter);
+      int LoopTerm = 1;
+      while (LoopTerm> 0){  //test whether the period has elapsed
+        int duur = period * ResetCounter;
+        rest = duur - LoopCounter;///60.0;//in minuten
+        char buffer1[12];         //the ASCII of the integer will be stored in this char array
+        itoa(rest,buffer1,10); //(integer, yourBuffer, base)
+        mqttClient.publish("RestTijd", buffer1);
+        Serial.print("duur: ");
+        Serial.println(duur);
+        if (LedState >0){
+          digitalWrite(D5, LOW);
+          LedState = 0;
+        }
+        else {
+          digitalWrite(D5, HIGH);
+          LedState = 1;
+        }
+        wait(1);
+        LoopCounter = LoopCounter + 1;
+        if (LoopCounter >= period * ResetCounter){LoopTerm = 0;}
+    }   
+    digitalWrite(D5, LOW);
+    digitalWrite(D6, HIGH);
+    mqttClient.publish("CVStatus", "Restarting");
+    Serial.print("CVStatus: ");
+    Serial.println("Restarting");
+    wait(2); // give time to react
+    AnaIn = 0;
+    LeesTeller = 1;
+    LeesRepeat = 0;
+    whileVoorwaarde = 1;
+    while (whileVoorwaarde > 0)
+    {
+     AnaIn = analogRead(A0);
+     //Serial.println(AnaIn);
+     LeesTeller = LeesTeller + 1;
+     if (AnaIn >= 100){
+      LeesRepeat = LeesRepeat + 1;
+      voltage = (AnaIn * 0.3225) - 81.042;
+      }
+     
+     Serial.print("controle LeesRepeat: ");
+     Serial.println(LeesRepeat);
+     wait(2); 
+     if (voltage >= 15){
+      whileVoorwaarde = 0;
+     }
+     Serial.print("whileVoorwaarde: ");
+     Serial.println(whileVoorwaarde);
+    }
+    Serial.print("voltage: ");
+    //char buffer[12];         //the ASCII of the integer will be stored in this char array
+    itoa(voltage,buffer,10); //(integer, yourBuffer, base)
+    Serial.println(buffer);
+    if (voltage < 20){
+      resetting = false;
+      ResetCounter = 0;
+      Serial.println("Restart ok");
+    }
+    else{
+      Serial.println("Restart failed");
+    }
+ }
+ // Veiligheids blok uit
+    if (voltage < 5 && ! resetting) {
+      digitalWrite(D6, LOW);
+      ResetCounter = 0;
+      mqttClient.publish("CVStatus", "uit");
+      mqttClient.publish("RestTijd", "-");
+      Serial.print("CVStatus: ");
+      Serial.println("uit");
+    }
+    // Veiligheids blok aan
+    if (voltage >= 10 && ! resetting) {
+      digitalWrite(D6, HIGH);
+      ResetCounter = 0;
+       mqttClient.publish("CVStatus", "aan");
+      Serial.print("CVStatus: ");
+      Serial.println("aan");
+      mqttClient.publish("RestTijd", "-");
+    }
+    // Dont overload the server!
+    Serial.println("Loop klaar, even wachten");
+    wait(1*5);
+   
+}}

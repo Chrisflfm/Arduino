@@ -18,8 +18,8 @@
 // global var
 bool resetting = false;
 WiFiClient WIFI_CLIENT;
-int period = 30;// 150;//150 seconden = 2.5 min
-int period2 = 5;// 60;//60 seconden = 1 min
+int period = 150;// 150;//150 seconden = 2.5 min
+int period2 = 60;// 60;//60 seconden = 1 min
 float rest;
 int LedState;
 int ResetCounter = 1;
@@ -28,6 +28,10 @@ int FirstLoop = 0;
 int voltage;
 int AnaIn;
 int duur;
+int ResetSpanning = 210;
+int BedrijfsSpaning = 90;
+int WaitKetelUit = 300;//hoe lang nul volt voordat we zeggen vlam uit
+int KetelUit = WaitKetelUit;
 char buffer[12];         //the ASCII of the integer will be stored in this char array
 int Status;
 // Function prototypes
@@ -136,8 +140,8 @@ void setup() {
 
   // IO config:
  pinMode(A0, INPUT);
- pinMode(D5, OUTPUT);    // sets the digital pin D5 as LED
- pinMode(D6, OUTPUT);    // sets the digital pin D6 as HR RESET
+ pinMode(D5, OUTPUT);    // sets the digital pin D5 as KETEL
+ pinMode(D6, OUTPUT);    // sets the digital pin D6 as LED
  Serial.println("Starting loop");
  
 }
@@ -153,29 +157,35 @@ void loop() {
             mqttClient.subscribe("CVSpanning");
             mqttClient.subscribe("RestTijd");
             mqttClient.subscribe("CVStatus");
+            mqttClient.subscribe("KetelUit");
             FirstLoop = 1;
             mqttClient.publish("CVStatus", "Booting");
           }
           AnaIn = analogRead(A0);
-          voltage = (AnaIn * 0.3225) - 81.042;
+          voltage = (AnaIn * 0.3225) - 90.042;
           if (voltage < 0){voltage = 0;}
           Serial.print("Spanning: ");
           Serial.println(voltage);
           itoa(voltage,buffer,10); //(integer, yourBuffer, base)
           mqttClient.publish("CVSpanning", buffer );
 
+         //detectie ketel uit
+         if (voltage == 0 && Status == 3){
+          KetelUit = KetelUit + 1; 
+         }
+         if (voltage > 0){
+          KetelUit = 0;
+         }
          //Restart   
          if (Status == 2){
-                digitalWrite(D6, HIGH);
+                digitalWrite(D5, HIGH);
                 LoopCounter = LoopCounter + 1;
                 rest = duur - LoopCounter;///60.0;//in minuten
                 mqttClient.publish("CVStatus", "Restarting");
                 itoa(rest,buffer,10); //(integer, yourBuffer, base)
                 mqttClient.publish("RestTijd", buffer);
-                Serial.print("duur: ");
-                Serial.println(duur);
                 if (rest <= 0){
-                      Status = 0;
+                      Status = 3;
                       LoopCounter = 0; 
                 }
          }
@@ -186,8 +196,6 @@ void loop() {
                 rest = duur - LoopCounter;///60.0;//in minuten
                 itoa(rest,buffer,10); //(integer, yourBuffer, base)
                 mqttClient.publish("RestTijd", buffer);
-                Serial.print("duur: ");
-                Serial.println(duur);
                 if (rest <= 0){
                       Status = 2;
                       LoopCounter = 0; 
@@ -196,9 +204,9 @@ void loop() {
          } 
           
           // Veiligheids blok reset
-          if (Status < 1 && voltage > 20){
-              digitalWrite(D6, LOW);
-              digitalWrite(D5, HIGH);
+          if ((Status == 0 || Status == 3) && voltage > ResetSpanning){
+              digitalWrite(D5, LOW);
+              digitalWrite(D6, HIGH);
               mqttClient.publish("CVStatus", "Resetting");
               duur = period * ResetCounter;
               ResetCounter = ResetCounter + 1;
@@ -208,34 +216,37 @@ void loop() {
           
          
          //normal oparation
-          if (Status < 1 && voltage < 20 && voltage > 10 ){
-               digitalWrite(D6, HIGH); 
+          if (Status == 3 ){
+               digitalWrite(D6, LOW); 
                digitalWrite(D5, HIGH);
-               mqttClient.publish("CVStatus", "Burner active");
+               mqttClient.publish("CVStatus", "Normal operation");
                ResetCounter = 1;
-               Status = 0;
           }
          //Flame out
-          if (Status < 1 && voltage < 5 ){
-                     digitalWrite(D6, LOW); 
-                     digitalWrite(D5, LOW);
+          if (KetelUit >= WaitKetelUit ){
+                     //digitalWrite(D6, LOW); 
                      mqttClient.publish("CVStatus", "Burner off");
                      ResetCounter = 1;
                      Status = 0;
           }
          //LED knipperen
-         if (Status == 1 || Status == 2){
+         if (Status >0 && Status <= 2){
               if (LedState > 0){
-                  digitalWrite(D5, LOW);
+                  digitalWrite(D6, LOW);
                   LedState = 0;
                 }
               else {
-                  digitalWrite(D5, HIGH);
+                  digitalWrite(D6, HIGH);
                   LedState = 1;
                 }
         }
          // Dont overload the server!
-         itoa(Status,buffer,10); //(integer, yourBuffer, base)
+         int countDouwnKetelUit = WaitKetelUit - KetelUit;
+         if (countDouwnKetelUit < 0){
+                countDouwnKetelUit = WaitKetelUit;
+         }
+         itoa(countDouwnKetelUit,buffer,10); //(integer, yourBuffer, base)
+         mqttClient.publish("KetelUit", buffer);
          Serial.print("Status: ");
          Serial.println(Status);
          wait(1);

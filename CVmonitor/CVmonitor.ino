@@ -18,10 +18,11 @@
 // global var
 bool resetting = false;
 WiFiClient WIFI_CLIENT;
-int period = 150;// 150;//150 seconden = 2.5 min
-int period2 = 60;// 60;//60 seconden = 1 min
+int period = 600;// 150;//150 seconden = 2.5 min
+int period2 = 600;// 60;//60 seconden = 1 min
 float rest;
 int LedState;
+int InReset = 0;
 int ResetCounter = 1;
 int LoopCounter = 0;
 int FirstLoop = 0;
@@ -30,13 +31,14 @@ int AnaIn;
 int duur;
 int ResetSpanning = 200;
 int BedrijfsSpaning = 90;
-int WaitKetelUit = 300;//hoe lang nul volt voordat we zeggen vlam uit
+int WaitKetelUit = 120;//hoe lang nul volt voordat we zeggen vlam uit
 int KetelUit = WaitKetelUit;
 int SpanningPreReset = ResetSpanning;
-int ForceOff = 900;//na deze tijd met brander aan ga ik er vanuit dat die detectie niet klopt en doe ik een reset
+int ForceOff = 120;//na deze tijd met brander aan ga ik er vanuit dat die detectie niet klopt en doe ik een reset
 int ForceOffCounter = 0;
 char buffer[12];         //the ASCII of the integer will be stored in this char array
 int Status;
+int Delco = 0;
 // Function prototypes
 void subscribeReceive(char* topic, byte* payload, unsigned int length);
 
@@ -75,6 +77,17 @@ void subscribeReceive(char* topic, byte* payload, unsigned int length)
   for(int i = 0; i < length; i ++)
   {
     Serial.print(char(payload[i]));
+  }
+  String strTopic(*topic);
+  if (strTopic == "r"){
+    Serial.println("topic ontvangen");
+    if (payload[0] =='1'){
+      Serial.println("Reset ontvangen");
+      Serial.println(payload[0]);
+      digitalWrite(D5, LOW);
+      mqttClient.publish("CVStatus", "Manueel rust");
+      InReset = 1;
+    }
   }
  
   // Print a newline
@@ -120,6 +133,7 @@ void setup() {
 
  mqttClient.setServer("192.168.1.43", 1883);
  mqttClient.setClient(WIFI_CLIENT);
+ mqttClient.setCallback(subscribeReceive);
  mqttClient.connect("arduino-1");
 
  while (!mqttClient.connected()) {
@@ -152,101 +166,121 @@ void setup() {
 void loop() {
           // This is needed at the top of the loop!
           mqttClient.loop();
-          // Ensure that we are subscribed to the topic "MakerIOTopic"
-          if (FirstLoop < 1){
+         if (FirstLoop < 1){
             Status = 0;
             ResetCounter = 1;
             LoopCounter = 0;
-            mqttClient.subscribe("CVSpanning");
-            mqttClient.subscribe("RestTijd");
-            mqttClient.subscribe("CVStatus");
-            mqttClient.subscribe("KetelUit");
-            mqttClient.subscribe("SpanningPreReset");
             FirstLoop = 1;
             digitalWrite(D5, HIGH);
-            mqttClient.publish("CVStatus", "Booting");
+            mqttClient.subscribe("reset");
+            mqttClient.publish("CVStatus", "Brander vrij wacht op vraag");
+            mqttClient.publish("ForceOffCounter","-");
+            mqttClient.publish("RestTijd","-");
+            mqttClient.publish("KetelUit", "-" );
           }
-          AnaIn = analogRead(A0);
-          voltage = (AnaIn * 0.3225) - 90.042;
-          if (voltage < 0){voltage = 0;}
-          Serial.print("Spanning: ");
-          Serial.println(voltage);
+          //Delco 0 Ain
+          //Delco 1 rust
+          //Delco 2 MQTT
+          //Delco 3 rust
+                   
+          if (Delco==0){ 
+              AnaIn = analogRead(A0);
+              voltage = (AnaIn * 0.3225) - 90.042;
+              if (voltage < 0){voltage = 0;}
+              //Serial.print("Spanning: ");
+              //Serial.println(voltage);
+          }
+          //Serial.print("Status: ");
+          //Serial.println(Status);
           itoa(voltage,buffer,10); //(integer, yourBuffer, base)
-          mqttClient.publish("CVSpanning", buffer );
-          itoa(SpanningPreReset,buffer,10); //(integer, yourBuffer, base)
-          mqttClient.publish("SpanningPreReset", buffer );
-         //detectie ketel uit
-         if (voltage == 0 && Status == 3){
+          if (Delco==2){mqttClient.publish("CVSpanning", buffer );}
+          //itoa(SpanningPreReset,buffer,10); //(integer, yourBuffer, base)
+          //if (Delco==2){mqttClient.publish("SpanningPreReset", buffer );}
+         
+         //Teller detectie ketel uit
+         if (voltage == 0 && Status > 0){
           KetelUit = KetelUit + 1; 
+          
          }
          if (voltage > 0){
+          // ketel is niet meer uit
           KetelUit = 0;
          }
-         //Restart   
+         itoa(WaitKetelUit - KetelUit,buffer,10); //(integer, yourBuffer, base)
+         if (Delco==2 && Status == 2){mqttClient.publish("KetelUit", buffer );}
+         if (Delco==2 && Status != 2){mqttClient.publish("KetelUit", "-" );}
+         
+         //Brandtijd   
          if (Status == 2){
-                digitalWrite(D5, HIGH);
                 LoopCounter = LoopCounter + 1;
                 rest = duur - LoopCounter;///60.0;//in minuten
-                mqttClient.publish("CVStatus", "Restarting");
+                if (Delco==2 && InReset == 0){mqttClient.publish("CVStatus", "Brander vrij periode");}
                 itoa(rest,buffer,10); //(integer, yourBuffer, base)
-                mqttClient.publish("RestTijd", buffer);
+                if (Delco==2){mqttClient.publish("RestTijd", buffer);}
                 if (rest <= 0){
-                      Status = 3;
+                      if (Delco==2){mqttClient.publish("CVStatus", "Brander vrij");}
+                      digitalWrite(D6, LOW);
+                      Status = 3; //cool down
                       LoopCounter = 0; 
+                      InReset = 0;
                 }
          }
          
-         //Wachten voor restart
+         //Rusttijd
           if (Status == 1 ){
+                digitalWrite(D6, LOW); 
                 LoopCounter = LoopCounter + 1;
                 rest = duur - LoopCounter;///60.0;//in minuten
                 itoa(rest,buffer,10); //(integer, yourBuffer, base)
-                mqttClient.publish("RestTijd", buffer);
+                if (Delco==2){mqttClient.publish("ForceOffCounter", buffer);}
                 if (rest <= 0){
                       Status = 2;
                       LoopCounter = 0; 
                       duur = period2;
                       SpanningPreReset = voltage;
+                      if (SpanningPreReset < BedrijfsSpaning){
+                        SpanningPreReset = ResetSpanning;
+                      }
                       ForceOffCounter = 0;
+                      Status = 0;//Wacht op ontsteken
+                      digitalWrite(D5, HIGH);
                }
          } 
           
-          // Veiligheids blok reset
-          if ((Status == 0 || Status == 3) && voltage >= SpanningPreReset){
-              digitalWrite(D5, LOW);
+          //Ontsteken
+          if (Status == 0 && voltage > BedrijfsSpaning){
               digitalWrite(D6, HIGH);
-              mqttClient.publish("CVStatus", "Resetting");
+              digitalWrite(D5, HIGH);
               duur = period * ResetCounter;
               ResetCounter = ResetCounter + 1;
               LoopCounter = 0;
-              Status = 1;
+              mqttClient.publish("ForceOffCounter","-");
+              InReset = 0;
+              Status = 2;
           }    
           
          
-         //normal oparation
+         //Cool down
           if (Status == 3 ){
                digitalWrite(D6, LOW); 
-               digitalWrite(D5, HIGH);
-               mqttClient.publish("CVStatus", "Normal operation");
+               digitalWrite(D5, LOW);
+               mqttClient.publish("CVStatus", "Afkoel periode");
+               mqttClient.publish("RestTijd", "-");
                ResetCounter = 1;
-               ForceOffCounter = ForceOffCounter + 1;
-               if (ForceOffCounter >= ForceOff){
-                ForceOffCounter = 0;
-                SpanningPreReset = 200;
-               }
-               itoa(ForceOffCounter,buffer,10); //(integer, yourBuffer, base)
-               mqttClient.publish("ForceOffCounter", buffer);
-          }
+               Status = 1;//Rusttijd
+           } 
          //Flame out
-          if (KetelUit >= WaitKetelUit ){
-                     //digitalWrite(D6, LOW); 
-                     mqttClient.publish("CVStatus", "Burner off");
+          if (Status > 0 && KetelUit >= WaitKetelUit ){
                      ResetCounter = 1;
                      Status = 0;
+                     LoopCounter = 10000;//als ketel ketel uit alles terug naar start positie
+                     mqttClient.publish("ForceOffCounter","-");
+                     mqttClient.publish("RestTijd","-");
+                     mqttClient.publish("CVStatus", "Brander uit");
                      SpanningPreReset = ResetSpanning;
           }
          //LED knipperen
-         if (Status >0 && Status <= 2){
+         if (Status == 1){
               if (LedState > 0){
                   digitalWrite(D6, LOW);
                   LedState = 0;
@@ -256,14 +290,8 @@ void loop() {
                   LedState = 1;
                 }
         }
-         // Dont overload the server!
-         int countDouwnKetelUit = WaitKetelUit - KetelUit;
-         if (countDouwnKetelUit < 0){
-                countDouwnKetelUit = WaitKetelUit;
-         }
-         itoa(countDouwnKetelUit,buffer,10); //(integer, yourBuffer, base)
-         mqttClient.publish("KetelUit", buffer);
-         Serial.print("Status: ");
-         Serial.println(Status);
+         Delco = Delco + 1;
+         if (Delco > 3){Delco = 0;}
          wait(1);
+         yield();
 }

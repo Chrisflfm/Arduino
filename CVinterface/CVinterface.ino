@@ -22,16 +22,6 @@ int RoBur = 38;
 //int MqttError = 40;
 int interfaceStatus = 1;
 
-int oBlKeuk = 0; 
-int oGrKeuk = 0;
-int oRoKeuk = 0;
-int oBlBad = 0;  
-int oGrBad = 0;
-int oRoBad = 0;
-int oBlBur = 0;  
-int oGrBur = 0;
-int oRoBur = 0;
-
 // Ethernet and MQTT related objects
 byte mac[] = { 0xDC, 0x52, 0x2A, 0x52, 0xFE, 0xED };
 IPAddress ip(192,168,1,25);
@@ -169,39 +159,64 @@ void subscribeReceive(char* topic, byte* payload, unsigned int length)
     Serial.print("] ");
     Serial.println(words[i]);
   }
-  if (words[6] == "true"){
-    digitalWrite(GrBur, HIGH);
-    oGrBur = 1;
+   if (words[0] == "true"){
+    digitalWrite(GrKeuk, HIGH);
   }
   else{
-   digitalWrite(GrBur, LOW);
-   oGrBur = 0;
+   digitalWrite(GrKeuk, LOW);   
+  }
+   if (words[1] == "true"){
+    digitalWrite(BlKeuk, HIGH);
+  }
+  else{
+   digitalWrite(BlKeuk, LOW);   
+  }
+   if (words[2] == "true"){
+    digitalWrite(RoKeuk, HIGH);
+  }
+  else{
+   digitalWrite(RoKeuk, LOW);   
+  }
+  if (words[3] == "true"){
+    digitalWrite(GrBad, HIGH);
+  }
+  else{
+   digitalWrite(GrBad, LOW);   
+  }
+   if (words[4] == "true"){
+    digitalWrite(BlBad, HIGH);
+  }
+  else{
+   digitalWrite(BlBad, LOW);   
+  }
+   if (words[5] == "true"){
+    digitalWrite(RoBad, HIGH);
+  }
+  else{
+   digitalWrite(RoBad, LOW);   
+  }
+  if (words[6] == "true"){
+    digitalWrite(GrBur, HIGH);
+  }
+  else{
+   digitalWrite(GrBur, LOW);   
   }
   if (words[7] == "true"||words[11] == "true" ){
     digitalWrite(BlBur, HIGH);
-    oBlBur = 1;
   }
   if(words[7] != "true" && words[11] != "true" ){
    digitalWrite(BlBur, LOW);
-   oBlBur = 0;
   }
   if (words[8] == "true"){
     digitalWrite(RoBur, HIGH);
-    oRoBur = 1;
   }
   else{
    digitalWrite(RoBur, LOW);
-   oRoBur = 0;
   }
   Serial.print("] ");
     Serial.println(words[i]);
  }
-  Serial.print("oBlBur ");
-  Serial.println(oBlBur);
-  Serial.print("oGrBur ");
-  Serial.println(oGrBur);
-  Serial.print("oRoBur ");
-  Serial.println(oRoBur);
+  
 }
 
 void softReset(){
@@ -214,9 +229,8 @@ void reconnect() {
     if (mqttClient.connect("chrisFLFM")) {
       Serial.println("connected");
       subscribeToMqtt();
-//      digitalWrite(MqttError, LOW);
-    } else {
-//      digitalWrite(MqttError, HIGH);
+      } 
+      else {
       Serial.print("failed, rc= ");
       Serial.print(MQTTconnctionState(mqttClient.state()));
       Serial.println(" try again in 5 seconds");
@@ -232,15 +246,15 @@ void reconnect() {
 }
 
 void setup() {
-  Serial.begin(115200);
-
   // disable SD card if one in the slot
   pinMode(4,OUTPUT);
   digitalWrite(4,HIGH);
 
+  Serial.begin(115200);
   Serial.println("Starting Ethernet shield");
+  wait(10);   //wait before starting ethernet
   Ethernet.begin(mac,ip);
-  wait(1);   //starting ethernet
+  wait(3);   //starting ethernet
   Serial.println(Ethernet.localIP());
 
   mqttClient.setServer("192.168.1.43", 1883);
@@ -253,8 +267,6 @@ void setup() {
     Serial.print("connection state: ");
     Serial.println(mqttClient.state());
     mqttClient.connect("chrisFLFM");
-    wait(1);
-   }
     if (mqttClient.connect("chrisFLFM")) {
       // connection succeeded
       Serial.println("Connected to MQTT server");
@@ -265,7 +277,9 @@ void setup() {
       // mqttClient.state() will provide more information
       // on why it failed.
       Serial.println("Connection failed ");
+      wait(1);
   }
+ }
    // IO config:
  //pinMode(A0, INPUT);
  pinMode(GrKeuk, OUTPUT);    // sets the digital pin D5 as keuken groen
@@ -277,6 +291,7 @@ void setup() {
  pinMode(GrBur, OUTPUT);    // sets the digital pin D5 as bureel groen
  pinMode(BlBur, OUTPUT);    // sets the digital pin D6 as bureel blauw
  pinMode(RoBur, OUTPUT);    // sets the digital pin D6 as bureel rood
+ pinMode(13, OUTPUT); //onboard LED
 }
 
 void loop() {
@@ -305,10 +320,17 @@ void loop() {
   }
   wait(1);
   yield();
-  if (LoopCounter >=2){ //beat every 10 loops = 10 x wait time
+  if (LoopCounter >=2){ //beat every x loops = x times wait time(s)
   itoa(interfaceStatus,buffer,10); //(integer, yourBuffer, base)
   mqttClient.publish("CVMonitorStatus", buffer);
   interfaceStatus = interfaceStatus * -1;
+  if (interfaceStatus < 0){
+    digitalWrite(13, LOW);
+  }
+  else {
+    digitalWrite(13, HIGH);
+  }
+  
   LoopCounter = -1;
   }
   LoopCounter = LoopCounter + 1;

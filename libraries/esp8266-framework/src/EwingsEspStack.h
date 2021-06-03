@@ -1,5 +1,5 @@
-/************************** Ewings Esp8266 Stack ******************************
-This file is part of the Ewings Esp8266 Stack.
+/***************************** Ewings Esp Stack *******************************
+This file is part of the Ewings Esp Stack.
 
 This is free software. you can redistribute it and/or modify it but without any
 warranty.
@@ -8,12 +8,14 @@ Author          : Suraj I.
 created Date    : 1st June 2019
 ******************************************************************************/
 
-#ifndef _EWINGS_ESP8266_STACK_H_
-#define _EWINGS_ESP8266_STACK_H_
+#ifndef _EWINGS_ESP_STACK_H_
+#define _EWINGS_ESP_STACK_H_
 
-#include <ESP8266WiFi.h>
-#include <WiFiClient.h>
 #include <config/Config.h>
+
+#include <interface/WiFiInterface.h>
+#include <interface/WiFiClientInterface.h>
+#include <interface/HttpClientInterface.h>
 
 #ifdef ENABLE_EWING_HTTP_SERVER
 #include <webserver/EwingsWebServer.h>
@@ -46,6 +48,10 @@ created Date    : 1st June 2019
 #include <helpers/ExceptionsNotifier.h>
 #endif
 
+#ifdef ENABLE_DEVICE_IOT
+#include <service_provider/DeviceIotServiceProvider.h>
+#endif
+
 #if defined( ENABLE_NAPT_FEATURE )
 #include "lwip/lwip_napt.h"
 #include "lwip/app/dhcpserver.h"
@@ -56,32 +62,46 @@ created Date    : 1st June 2019
 #endif
 
 /**
- * EwingsEsp8266Stack class
+ * EwingsEspStack class
  */
-class EwingsEsp8266Stack {
+class EwingsEspStack {
 
   public:
+
+    /**
+     * EwingsEspStack constructor.
+     */
+    EwingsEspStack();
+    /**
+     * EwingsEspStack destructor.
+     */
+    ~EwingsEspStack();
+
     void initialize( void );
     void serve( void );
 
   protected:
-    /**
-		 * @var	ESP8266WiFiClass*|&WiFi wifi
-		 */
-    ESP8266WiFiClass* wifi = &WiFi;
-    /**
-		 * @var	WiFiClient  wifi_client
-		 */
-    WiFiClient wifi_client;
-
     #ifdef EW_SERIAL_LOG
     static void handleLogPrints( void );
     #endif
     #if defined( ENABLE_NAPT_FEATURE ) || defined( ENABLE_NAPT_FEATURE_LWIP_V2 )
     void enable_napt_service( void );
     #endif
+
+    /**
+		 * @var	iWiFiInterface*   m_wifi
+		 */
+    iWiFiInterface        *m_wifi;
+    /**
+		 * @var	iWiFiClientInterface*  m_wifi_client
+		 */
+    iWiFiClientInterface  *m_wifi_client;
+    /**
+		 * @var	iHttpClientInterface*  m_http_client
+		 */
+    iHttpClientInterface  *m_http_client;
 };
 
-extern EwingsEsp8266Stack EwStack;
+extern EwingsEspStack EwStack;
 
 #endif

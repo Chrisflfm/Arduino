@@ -1,5 +1,5 @@
 /****************************** Mqtt service **********************************
-This file is part of the Ewings Esp8266 Stack.
+This file is part of the Ewings Esp Stack.
 
 This is free software. you can redistribute it and/or modify it but without any
 warranty.
@@ -33,49 +33,13 @@ class MqttServiceProvider : public ServiceProvider {
     /**
      * MqttServiceProvider constructor.
      */
-    MqttServiceProvider(){
-    }
-
+    MqttServiceProvider();
     /**
 		 * MqttServiceProvider destructor
 		 */
-    ~MqttServiceProvider(){
-      this->stop();
-      delete[] this->_mqtt_payload;
-    }
+    ~MqttServiceProvider();
 
-    /**
-		 * @var	int|0 _mqtt_timer_cb_id
-		 */
-    int _mqtt_timer_cb_id=0;
-    /**
-		 * @var	int|0 _mqtt_publish_cb_id
-		 */
-    int _mqtt_publish_cb_id=0;
-    /**
-		 * @var	int|0 _mqtt_subscribe_cb_id
-		 */
-    int _mqtt_subscribe_cb_id=0;
-    /**
-		 * @array	char  _mqtt_payload
-		 */
-    char* _mqtt_payload;
-    /**
-		 * @var	MqttPublishDataCallback  _mqtt_publish_data_cb
-		 */
-    MqttPublishDataCallback _mqtt_publish_data_cb = nullptr;
-    /**
-		 * @var	MqttSubscribeDataCallback  _mqtt_subscribe_data_cb
-		 */
-    MqttSubscribeDataCallback _mqtt_subscribe_data_cb = nullptr;
-
-
-    /**
-		 * @var	MQTTClient  mqtt_client
-		 */
-    MQTTClient mqtt_client;
-
-    void begin( ESP8266WiFiClass* _wifi );
+    void begin( iWiFiInterface* _wifi );
     void handleMqttPublish( void );
     void handleMqttSubScribe( void );
     void handleMqttConfigChange( int _mqtt_config_type=MQTT_GENERAL_CONFIG );
@@ -88,12 +52,41 @@ class MqttServiceProvider : public ServiceProvider {
     void printMqttConfigLogs( void );
     #endif
 
+    /**
+		 * @var	int|0 m_mqtt_timer_cb_id
+		 */
+    int                     m_mqtt_timer_cb_id;
+    /**
+		 * @var	int|0 m_mqtt_publish_cb_id
+		 */
+    int                     m_mqtt_publish_cb_id;
+    /**
+		 * @var	int|0 m_mqtt_subscribe_cb_id
+		 */
+    int                     m_mqtt_subscribe_cb_id;
+    /**
+		 * @array	char  m_mqtt_payload
+		 */
+    char                    *m_mqtt_payload;
+    /**
+		 * @var	MqttPublishDataCallback  m_mqtt_publish_data_cb
+		 */
+    MqttPublishDataCallback m_mqtt_publish_data_cb;
+    /**
+		 * @var	MqttSubscribeDataCallback  m_mqtt_subscribe_data_cb
+		 */
+    MqttSubscribeDataCallback m_mqtt_subscribe_data_cb;
+    /**
+		 * @var	MQTTClient  m_mqtt_client
+		 */
+    MQTTClient              m_mqtt_client;
+
   protected:
 
     /**
-		 * @var	ESP8266WiFiClass*|&WiFi wifi
+		 * @var	iWiFiInterface*|&WiFi wifi
 		 */
-    ESP8266WiFiClass* wifi;
+    iWiFiInterface          *m_wifi;
 };
 
 extern MqttServiceProvider __mqtt_service;

@@ -1,5 +1,5 @@
 /******************************* Home Controller ******************************
-This file is part of the Ewings Esp8266 Stack.
+This file is part of the Ewings Esp Stack.
 
 This is free software. you can redistribute it and/or modify it but without any
 warranty.
@@ -39,8 +39,10 @@ class HomeController : public Controller {
 		 */
 		void boot( void ){
 
-			this->route_handler->register_route( EW_SERVER_HOME_ROUTE, [&]() { this->handleHomeRoute(); } );
-      this->route_handler->register_not_found_fn( [&]() { this->handleNotFound(); } );
+			if( nullptr != this->m_route_handler ){
+				this->m_route_handler->register_route( EW_SERVER_HOME_ROUTE, [&]() { this->handleHomeRoute(); } );
+	      this->m_route_handler->register_not_found_fn( [&]() { this->handleNotFound(); } );
+			}
 		}
 
 		/**
@@ -83,10 +85,15 @@ class HomeController : public Controller {
       Logln(F("Handling 404 route"));
       #endif
 
+			if( nullptr == this->m_web_resource ||
+					nullptr == this->m_web_resource->m_server ){
+				return;
+			}
+
       char* _page = new char[EW_HTML_MAX_SIZE];
       this->build_html( _page, EW_SERVER_404_PAGE );
 
-      this->web_resource->server->send( HTTP_NOT_FOUND, EW_HTML_CONTENT, _page );
+      this->m_web_resource->m_server->send( HTTP_NOT_FOUND, EW_HTML_CONTENT, _page );
       delete[] _page;
     }
 
@@ -99,12 +106,18 @@ class HomeController : public Controller {
       Logln(F("Handling Home route"));
       #endif
 
+			if( nullptr == this->m_web_resource ||
+					nullptr == this->m_web_resource->m_server ||
+					nullptr == this->m_route_handler ){
+				return;
+			}
+
       char* _page = new char[EW_HTML_MAX_SIZE];
 
 			memset( _page, 0, EW_HTML_MAX_SIZE );
 			strcat_P( _page, EW_SERVER_HEADER_HTML );
 
-			if( this->route_handler->has_active_session() ){
+			if( this->m_route_handler->has_active_session() ){
 
 				strcat_P( _page, EW_SERVER_MENU_CARD_PAGE_WRAP_TOP );
 
@@ -120,6 +133,9 @@ class HomeController : public Controller {
 				#ifdef ENABLE_EMAIL_SERVICE
 				concat_svg_menu_card( _page, EW_SERVER_HOME_MENU_TITLE_EMAIL, SVG_ICON48_PATH_MAIL, EW_SERVER_EMAIL_CONFIG_ROUTE );
 				#endif
+				#ifdef ENABLE_DEVICE_IOT
+				concat_svg_menu_card( _page, EW_SERVER_HOME_MENU_TITLE_DEVICE_REGISTER, SVG_ICON48_PATH_BEENHERE, EW_SERVER_DEVICE_REGISTER_CONFIG_ROUTE );
+				#endif
 				concat_svg_menu_card( _page, EW_SERVER_HOME_MENU_TITLE_DASHBOARD, SVG_ICON48_PATH_DASHBOARD, EW_SERVER_DASHBOARD_ROUTE );
 				concat_svg_menu_card( _page, EW_SERVER_HOME_MENU_TITLE_LOGOUT, SVG_ICON48_PATH_POWER, EW_SERVER_LOGOUT_ROUTE );
 
@@ -131,7 +147,7 @@ class HomeController : public Controller {
 
 			strcat_P( _page, EW_SERVER_FOOTER_HTML );
 
-      this->web_resource->server->send( HTTP_OK, EW_HTML_CONTENT, _page );
+      this->m_web_resource->m_server->send( HTTP_OK, EW_HTML_CONTENT, _page );
       delete[] _page;
     }
 

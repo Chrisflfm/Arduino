@@ -1,5 +1,5 @@
 /************************ N/W Time Protocol service ***************************
-This file is part of the Ewings Esp8266 Stack.
+This file is part of the Ewings Esp Stack.
 
 This is free software. you can redistribute it and/or modify it but without any
 warranty.
@@ -24,29 +24,16 @@ class WiFiServiceProvider : public ServiceProvider {
     /**
      * WiFiServiceProvider constructor.
      */
-    WiFiServiceProvider(){
-    }
+    WiFiServiceProvider();
 
     /**
 		 * WiFiServiceProvider destructor
 		 */
-		~WiFiServiceProvider(){
-		}
+		~WiFiServiceProvider();
 
-    /**
-		 * @var	uint8_t  wifi_connection_timeout
-		 */
-    uint8_t wifi_connection_timeout = WIFI_STATION_CONNECT_ATTEMPT_TIMEOUT;
-
-    /**
-		 * @var	uint8_t array temperory mac buffer
-		 */
-    uint8_t temp_mac[6];
-
-    void begin( ESP8266WiFiClass* _wifi );
-
+    void begin( iWiFiInterface* _wifi );
     bool configure_wifi_access_point( wifi_config_table* _wifi_credentials );
-    bool configure_wifi_station( wifi_config_table* _wifi_credentials, uint8_t* mac = NULL );
+    bool configure_wifi_station( wifi_config_table* _wifi_credentials, uint8_t* mac = nullptr );
 
     bool scan_within_station( char* ssid, uint8_t* bssid );
     bool scan_within_station_async( char* ssid, uint8_t* bssid, int _scanCount );
@@ -67,12 +54,20 @@ class WiFiServiceProvider : public ServiceProvider {
     void printWiFiConfigLogs( void );
     #endif
 
+    /**
+		 * @var	uint8_t  m_wifi_connection_timeout
+		 */
+    uint8_t m_wifi_connection_timeout;
+    /**
+		 * @var	uint8_t array temperory mac buffer
+		 */
+    uint8_t m_temp_mac[6];
 
   protected:
     /**
-		 * @var	ESP8266WiFiClass*|&WiFi wifi
+		 * @var	iWiFiInterface*|&WiFi wifi
 		 */
-    ESP8266WiFiClass* wifi;
+    iWiFiInterface  *m_wifi;
 };
 
 extern WiFiServiceProvider __wifi_service;

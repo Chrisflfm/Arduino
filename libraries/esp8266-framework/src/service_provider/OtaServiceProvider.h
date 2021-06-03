@@ -1,5 +1,5 @@
 /************** Over The Air firmware update service **************************
-This file is part of the Ewings Esp8266 Stack.
+This file is part of the Ewings Esp Stack.
 
 This is free software. you can redistribute it and/or modify it but without any
 warranty.
@@ -12,8 +12,6 @@ created Date    : 1st June 2019
 #define _HTTP_OTA_SERVICE_PROVIDER_H_
 
 #include <service_provider/ServiceProvider.h>
-#include <WiFiClient.h>
-#include <ESP8266HTTPClient.h>
 #include <ESP8266httpUpdate.h>
 
 /**
@@ -40,33 +38,30 @@ class OtaServiceProvider : public ServiceProvider{
   public:
 
     /**
-     * @var	WiFiClient*|NULL	wifi_client
-     */
-    WiFiClient* wifi_client=NULL;
-
-    /**
-     * @var	HTTPClient*|NULL	http_client
-     */
-    HTTPClient* http_client=NULL;
-
-    /**
      * OtaServiceProvider constructor.
      */
-    OtaServiceProvider(){
-    }
-
+    OtaServiceProvider();
     /**
      * OtaServiceProvider destructor.
      */
-    ~OtaServiceProvider(){
-    }
+    ~OtaServiceProvider();
 
-    void begin_ota( WiFiClient* _wifi_client, HTTPClient* _http_client );
+    void begin_ota( iWiFiClientInterface* _wifi_client, iHttpClientInterface* _http_client );
     void handleOta( void );
     http_ota_status handle( void );
     #ifdef EW_SERIAL_LOG
     void printOtaConfigLogs( void );
     #endif
+
+    /**
+     * @var	iWiFiClientInterface*|nullptr	m_wifi_client
+     */
+    iWiFiClientInterface  *m_wifi_client;
+
+    /**
+     * @var	iHttpClientInterface*|nullptr	m_http_client
+     */
+    iHttpClientInterface  *m_http_client;
 };
 
 extern OtaServiceProvider __ota_service;

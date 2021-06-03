@@ -1,5 +1,5 @@
 /****************************** Gpio service **********************************
-This file is part of the Ewings Esp8266 Stack.
+This file is part of the Ewings Esp Stack.
 
 This is free software. you can redistribute it and/or modify it but without any
 warranty.
@@ -15,7 +15,6 @@ created Date    : 1st June 2019
 #include <service_provider/ServiceProvider.h>
 #include <service_provider/HttpServiceProvider.h>
 #include <service_provider/EmailServiceProvider.h>
-#include <WiFiClient.h>
 
 #define GPIO_PAYLOAD_DATA_KEY   "data"
 #define GPIO_PAYLOAD_MODE_KEY   "mode"
@@ -31,30 +30,13 @@ class GpioServiceProvider : public ServiceProvider {
     /**
      * GpioServiceProvider constructor.
      */
-    GpioServiceProvider(){
-    }
-
+    GpioServiceProvider();
     /**
 		 * GpioServiceProvider destructor
 		 */
-    ~GpioServiceProvider(){
-    }
+    ~GpioServiceProvider();
 
-    /**
-		 * @var gpio_config_table gpio_config_copy
-		 */
-    gpio_config_table gpio_config_copy;
-    /**
-		 * @var	int|0 _gpio_http_request_cb_id
-		 */
-    int _gpio_http_request_cb_id=0;
-    /**
-		 * @var	bool|true update_gpio_table_from_copy
-		 */
-    bool update_gpio_table_from_copy=true;
-
-
-    void begin( ESP8266WiFiClass* _wifi, WiFiClient* _wifi_client );
+    void begin( iWiFiInterface* _wifi, iWiFiClientInterface* _wifi_client );
     void enable_update_gpio_table_from_copy( void );
     void appendGpioJsonPayload( String& _payload );
     void applyGpioJsonPayload( char* _payload, uint16_t _payload_length );
@@ -70,14 +52,26 @@ class GpioServiceProvider : public ServiceProvider {
     #endif
     bool is_exceptional_gpio_pin( uint8_t _pin );
 
+    /**
+		 * @var gpio_config_table m_gpio_config_copy
+		 */
+    gpio_config_table m_gpio_config_copy;
+    /**
+		 * @var	int|0 m_gpio_http_request_cb_id
+		 */
+    int               m_gpio_http_request_cb_id;
+    /**
+		 * @var	bool|true m_update_gpio_table_from_copy
+		 */
+    bool              m_update_gpio_table_from_copy;
+
   protected:
 
     /**
-		 * @var	WiFiClient  wifi_client
+		 * @var	iWiFiClientInterface  *m_wifi_client
 		 */
-    WiFiClient* wifi_client;
-    ESP8266WiFiClass* wifi;
-
+    iWiFiClientInterface  *m_wifi_client;
+    iWiFiInterface        *m_wifi;
 };
 
 extern GpioServiceProvider __gpio_service;

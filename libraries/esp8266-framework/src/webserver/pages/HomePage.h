@@ -1,5 +1,5 @@
 /****************************** home html page ********************************
-This file is part of the Ewings Esp8266 Stack.
+This file is part of the Ewings Esp Stack.
 
 This is free software. you can redistribute it and/or modify it but without any
 warranty.
@@ -25,6 +25,9 @@ static const char EW_SERVER_HOME_MENU_TITLE_GPIO      [] PROGMEM = "gpio control
 #endif
 #ifdef ENABLE_EMAIL_SERVICE
 static const char EW_SERVER_HOME_MENU_TITLE_EMAIL     [] PROGMEM = "email settings";
+#endif
+#ifdef ENABLE_DEVICE_IOT
+static const char EW_SERVER_HOME_MENU_TITLE_DEVICE_REGISTER  [] PROGMEM = "register device";
 #endif
 static const char EW_SERVER_HOME_MENU_TITLE_DASHBOARD [] PROGMEM = "dashboard";
 static const char EW_SERVER_HOME_MENU_TITLE_LOGOUT    [] PROGMEM = "logout";

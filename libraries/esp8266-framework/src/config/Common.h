@@ -1,5 +1,5 @@
 /*************************** Common Config page *******************************
-This file is part of the Ewings Esp8266 Stack.
+This file is part of the Ewings Esp Stack.
 
 This is free software. you can redistribute it and/or modify it but without any
 warranty.
@@ -32,6 +32,11 @@ extern "C" {
  * enable/disable email service here
  */
 #define ENABLE_EMAIL_SERVICE
+
+/**
+ * enable/disable device iot feature here
+ */
+// #define ENABLE_DEVICE_IOT
 
 /**
  * enable/disable serial log

@@ -1,5 +1,5 @@
 /****************************** server routes *********************************
-This file is part of the Ewings Esp8266 Stack.
+This file is part of the Ewings Esp Stack.
 
 This is free software. you can redistribute it and/or modify it but without any
 warranty.
@@ -33,6 +33,8 @@ created Date    : 1st June 2019
 #define EW_SERVER_MQTT_GENERAL_CONFIG_ROUTE "/mqtt-general-config"
 #define EW_SERVER_MQTT_LWT_CONFIG_ROUTE "/mqtt-lwt-config"
 #define EW_SERVER_MQTT_PUBSUB_CONFIG_ROUTE "/mqtt-pubsub-config"
+
+#define EW_SERVER_DEVICE_REGISTER_CONFIG_ROUTE "/device-register-config"
 
 #endif
 

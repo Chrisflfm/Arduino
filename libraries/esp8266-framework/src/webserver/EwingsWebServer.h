@@ -1,5 +1,5 @@
 /******************************** web server **********************************
-This file is part of the Ewings Esp8266 Stack.
+This file is part of the Ewings Esp Stack.
 
 This is free software. you can redistribute it and/or modify it but without any
 warranty.
@@ -25,6 +25,10 @@ created Date    : 1st June 2019
 #ifdef ENABLE_EMAIL_SERVICE
 #include <webserver/controllers/EmailConfigController.h>
 #endif
+#ifdef ENABLE_DEVICE_IOT
+#include <webserver/controllers/DeviceIotController.h>
+#endif
+
 
 /**
  * WebServer class
@@ -36,76 +40,75 @@ class WebServer {
     /**
      * WebServer constructor.
      */
-    WebServer(){
-
-    }
-
+    WebServer();
     /**
      * WebServer destructor.
      */
-    ~WebServer(){
+    ~WebServer();
 
-    }
-
-    void start_server( ESP8266WiFiClass* _wifi );
+    void start_server( iWiFiInterface* _wifi );
     void handle_clients( void );
 
   protected:
     /**
-		 * @var	ESP8266WebServer  server
+		 * @var	iWiFiServerInterface  m_server
 		 */
-    ESP8266WebServer server;
+    iWiFiServerInterface  *m_server;
     /**
-		 * @var	ESP8266WiFiClass*|&WiFi wifi
+		 * @var	iWiFiInterface*|&WiFi m_wifi
 		 */
-    ESP8266WiFiClass* wifi;
-
-
+    iWiFiInterface        *m_wifi;
 
   private:
     /**
-		 * @var	HomeController  home_controller
+		 * @var	HomeController  m_home_controller
 		 */
-    HomeController home_controller;
+    HomeController        m_home_controller;
 
     /**
-		 * @var	DashboardController  dashboard_controller
+		 * @var	DashboardController  m_dashboard_controller
 		 */
-    DashboardController dashboard_controller;
+    DashboardController   m_dashboard_controller;
 
     /**
-		 * @var	OtaController  ota_controller
+		 * @var	OtaController  m_ota_controller
 		 */
-    OtaController ota_controller;
+    OtaController         m_ota_controller;
 
     /**
-		 * @var	WiFiConfigController  wificonfig_controller
+		 * @var	WiFiConfigController  m_wificonfig_controller
 		 */
-    WiFiConfigController wificonfig_controller;
+    WiFiConfigController  m_wificonfig_controller;
 
     /**
-		 * @var	LoginController  login_controller
+		 * @var	LoginController  m_login_controller
 		 */
-    LoginController login_controller;
+    LoginController       m_login_controller;
 
     #ifdef ENABLE_GPIO_SERVICE
     /**
-		 * @var	GpioController  gpio_controller
+		 * @var	GpioController  m_gpio_controller
 		 */
-    GpioController gpio_controller;
+    GpioController        m_gpio_controller;
     #endif
 
     #ifdef ENABLE_MQTT_SERVICE
     /**
-		 * @var	MqttController  mqtt_controller
+		 * @var	MqttController  m_mqtt_controller
 		 */
-    MqttController mqtt_controller;
+    MqttController        m_mqtt_controller;
     #endif
     #ifdef ENABLE_EMAIL_SERVICE
     /**
-		 * @var	EmailConfigController  emailconfig_controller
+		 * @var	EmailConfigController  m_emailconfig_controller
 		 */
-    EmailConfigController emailconfig_controller;
+    EmailConfigController m_emailconfig_controller;
+    #endif
+    #ifdef ENABLE_DEVICE_IOT
+    /**
+		 * @var	DeviceIotController  m_device_iot_controller
+		 */
+    DeviceIotController   m_device_iot_controller;
     #endif
 
 };

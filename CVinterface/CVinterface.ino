@@ -252,15 +252,15 @@ void setup() {
 
   Serial.begin(115200);
   Serial.println("Starting Ethernet shield");
-  wait(10);   //wait before starting ethernet
-  Ethernet.begin(mac,ip);
-  wait(3);   //starting ethernet
-  Serial.println(Ethernet.localIP());
+//  wait(10);   //wait before starting ethernet
+//  Ethernet.begin(mac,ip);
+//  wait(3);   //starting ethernet
+//  Serial.println(Ethernet.localIP());
 
-  mqttClient.setServer("192.168.1.43", 1883);
-  mqttClient.setCallback(subscribeReceive);
-  mqttClient.setClient(ethClient);
-  mqttClient.connect("chrisFLFM");  
+//  mqttClient.setServer("192.168.1.43", 1883);
+//  mqttClient.setCallback(subscribeReceive);
+//  mqttClient.setClient(ethClient);
+//  mqttClient.connect("chrisFLFM");  
 
   while (!mqttClient.connected()) {
     Serial.print("Connecting to MQTT...");
@@ -296,11 +296,11 @@ void setup() {
 
 void loop() {
     // This is needed at the top of the loop!
-  if (!mqttClient.connected()) {
-    Serial.println("connection to MQTT server lost");
-    reconnect();
-  }
-  mqttClient.loop();
+//  if (!mqttClient.connected()) {
+//    Serial.println("connection to MQTT server lost");
+//    reconnect();
+//  }
+//  mqttClient.loop();
   if (FirstLoop < 1){
     mqttClient.publish("CVMonitorStatus", "3");
     Serial.println("looping");
@@ -314,7 +314,7 @@ void loop() {
     digitalWrite(BlBur, LOW);
     digitalWrite(RoBur, LOW);
  //   digitalWrite(MqttError, LOW);
-    subscribeToMqtt();
+ //   subscribeToMqtt();
    mqttClient.publish("CVMonitorStatus", "0");
     FirstLoop = 10;
   }
